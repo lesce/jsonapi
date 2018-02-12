@@ -264,6 +264,173 @@ func TestUnmarshalSetsAttrs(t *testing.T) {
 	}
 }
 
+func TestUnmarshalParsesIntArray(t *testing.T) {
+	ints := []int {
+		1,
+		2,
+	}
+
+	payload := &OnePayload{
+		Data: &Node{
+			Type: "number-arrays",
+			Attributes: map[string]interface{}{
+				"ints": ints,
+			},
+		},
+	}
+
+	in := bytes.NewBuffer(nil)
+	json.NewEncoder(in).Encode(payload)
+
+	out := new(NumberArrays)
+
+	if err := UnmarshalPayload(in, out); err != nil {
+		t.Fatal(err)
+	}
+
+	if out.Ints[0] != 1 {
+		t.Fatal("Parsing the first integer failed")
+	}
+
+	if out.Ints[1] != 2 {
+		t.Fatal("Parsing the second integer failed")
+	}
+}
+
+func TestUnmarshalParsesUIntArray(t *testing.T) {
+	uints := []uint {
+		1,
+		2,
+	}
+
+	payload := &OnePayload{
+		Data: &Node{
+			Type: "number-arrays",
+			Attributes: map[string]interface{}{
+				"uints": uints,
+			},
+		},
+	}
+
+	in := bytes.NewBuffer(nil)
+	json.NewEncoder(in).Encode(payload)
+
+	out := new(NumberArrays)
+
+	if err := UnmarshalPayload(in, out); err != nil {
+		t.Fatal(err)
+	}
+
+	if out.UInts[0] != 1 {
+		t.Fatal("Parsing the first integer failed")
+	}
+
+	if out.UInts[1] != 2 {
+		t.Fatal("Parsing the second integer failed")
+	}
+}
+
+func TestUnmarshalParsesFloatArray(t *testing.T) {
+	floats := []float32 {
+		1.5,
+		2.4,
+	}
+
+	payload := &OnePayload{
+		Data: &Node{
+			Type: "number-arrays",
+			Attributes: map[string]interface{}{
+				"floats": floats,
+			},
+		},
+	}
+
+	in := bytes.NewBuffer(nil)
+	json.NewEncoder(in).Encode(payload)
+
+	out := new(NumberArrays)
+
+	if err := UnmarshalPayload(in, out); err != nil {
+		t.Fatal(err)
+	}
+
+	if out.Floats[0] != 1.5 {
+		t.Fatal("Parsing the first float failed")
+	}
+
+	if out.Floats[1] != 2.4 {
+		t.Fatal("Parsing the second float failed")
+	}
+}
+
+
+func TestUnmarshalParsesISO8601Array(t *testing.T) {
+	timestamps := []string {
+		"2016-08-17T08:27:12Z",
+		"2016-08-18T08:27:12Z",
+	}
+
+	payload := &OnePayload{
+		Data: &Node{
+			Type: "timestamp-arrays",
+			Attributes: map[string]interface{}{
+				"timestamps": timestamps,
+			},
+		},
+	}
+
+	in := bytes.NewBuffer(nil)
+	json.NewEncoder(in).Encode(payload)
+
+	out := new(Timestamps)
+
+	if err := UnmarshalPayload(in, out); err != nil {
+		t.Fatal(err)
+	}
+
+	first := time.Date(2016, 8, 17, 8, 27, 12, 0, time.UTC)
+	second := time.Date(2016, 8, 18, 8, 27, 12, 0, time.UTC)
+
+	if !out.Time[0].Equal(first) {
+		t.Fatal("Parsing the first ISO8601 timestamp failed")
+	}
+
+	if !out.Time[1].Equal(second) {
+		t.Fatal("Parsing the second ISO8601 timestamp failed")
+	}
+}
+
+func TestUnmarshalParsesISO8601TimePointerArray(t *testing.T) {
+	timestamps := []string {
+		"2016-08-17T08:27:12Z",
+		"2016-08-18T08:27:12Z",
+	}
+
+	payload := &OnePayload{
+		Data: &Node{
+			Type: "timestamps-arrays",
+			Attributes: map[string]interface{}{
+				"next": timestamps,
+			},
+		},
+	}
+
+	in := bytes.NewBuffer(nil)
+	json.NewEncoder(in).Encode(payload)
+
+	out := new(Timestamps)
+
+	if err := UnmarshalPayload(in, out); err != nil {
+		t.Fatal(err)
+	}
+
+	expected := time.Date(2016, 8, 17, 8, 27, 12, 0, time.UTC)
+
+	if !out.Next[0].Equal(expected) {
+		t.Fatal("Parsing the ISO8601 timestamp failed")
+	}
+}
+
 func TestUnmarshalParsesISO8601(t *testing.T) {
 	payload := &OnePayload{
 		Data: &Node{
