@@ -389,13 +389,20 @@ func unmarshalValue(fieldValue, v reflect.Value, fieldType reflect.Type, iso8601
 		return nil
 	}
 
-	if fieldValue.Type() == reflect.TypeOf([]string{}) {
-		values := make([]string, v.Len())
-		for i := 0; i < v.Len(); i++ {
-			values[i] = v.Index(i).Interface().(string)
+	if fieldValue.Kind() == reflect.Slice {
+		t := fieldValue.Type()
+		sliceType := t.Elem()
+		if sliceType.Kind() == reflect.Ptr {
+			// Then dereference it
+			sliceType = sliceType.Elem()
 		}
 
-		fieldValue.Set(reflect.ValueOf(values))
+		values := reflect.MakeSlice(reflect.SliceOf(sliceType), v.Len(), v.Len())
+		for i := 0; i < v.Len(); i++ {
+			values.Index(i).Set(reflect.ValueOf(v.Index(i).Interface()))
+		}
+
+		fieldValue.Set(values)
 
 		return nil
 	}
