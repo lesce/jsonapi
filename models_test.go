@@ -31,6 +31,20 @@ type Timestamp struct {
 	Next *time.Time `jsonapi:"attr,next,iso8601"`
 }
 
+type Timestamps struct {
+	ID   int        `jsonapi:"primary,timestamp-arrays"`
+	Time []time.Time  `jsonapi:"attr,timestamps,iso8601"`
+	Next []*time.Time `jsonapi:"attr,next,iso8601"`
+}
+
+type NumberArrays struct {
+	ID   int        	`jsonapi:"primary,number-arrays"`
+	Ints []int  		`jsonapi:"attr,ints"`
+	UInts []uint 		`jsonapi:"attr,uints"`
+	Floats []float32 	`jsonapi:"attr,floats"`
+	Doubles []float64 	`jsonapi:"attr,doubles"`
+}
+
 type Car struct {
 	ID    *string `jsonapi:"primary,cars"`
 	Make  *string `jsonapi:"attr,make,omitempty"`
