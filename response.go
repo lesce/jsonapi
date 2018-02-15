@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"reflect"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -547,9 +548,16 @@ func nodeMapValues(m *map[string]*Node) []*Node {
 	mp := *m
 	nodes := make([]*Node, len(mp))
 
+	keys := []string{}
+	for key, _ := range mp {
+		keys = append(keys, key)
+	}
+
+	sort.Strings(keys)
+
 	i := 0
-	for _, n := range mp {
-		nodes[i] = n
+	for _, key := range keys {
+		nodes[i] = mp[key]
 		i++
 	}
 
