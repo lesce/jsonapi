@@ -253,35 +253,44 @@ func visitModelNode(model interface{}, included *map[string]*Node,
 				kind = fieldType.Type.Kind()
 			}
 
-			// Handle allowed types
-			switch kind {
-			case reflect.String:
-				node.ID = v.Interface().(string)
-			case reflect.Int:
-				node.ID = strconv.FormatInt(int64(v.Interface().(int)), 10)
-			case reflect.Int8:
-				node.ID = strconv.FormatInt(int64(v.Interface().(int8)), 10)
-			case reflect.Int16:
-				node.ID = strconv.FormatInt(int64(v.Interface().(int16)), 10)
-			case reflect.Int32:
-				node.ID = strconv.FormatInt(int64(v.Interface().(int32)), 10)
-			case reflect.Int64:
-				node.ID = strconv.FormatInt(v.Interface().(int64), 10)
-			case reflect.Uint:
-				node.ID = strconv.FormatUint(uint64(v.Interface().(uint)), 10)
-			case reflect.Uint8:
-				node.ID = strconv.FormatUint(uint64(v.Interface().(uint8)), 10)
-			case reflect.Uint16:
-				node.ID = strconv.FormatUint(uint64(v.Interface().(uint16)), 10)
-			case reflect.Uint32:
-				node.ID = strconv.FormatUint(uint64(v.Interface().(uint32)), 10)
-			case reflect.Uint64:
-				node.ID = strconv.FormatUint(v.Interface().(uint64), 10)
-			default:
-				// We had a JSON float (numeric), but our field was not one of the
-				// allowed numeric types
-				er = ErrBadJSONAPIID
-				break
+			marshaler, isMarshaler := v.Interface().(json.Marshaler)
+			if isMarshaler {
+				marshalResult, marshalError := marshaler.MarshalJSON()
+				if marshalError != nil {
+					er = ErrBadJSONAPIID
+				}
+				node.ID = string(marshalResult[1 : len(marshalResult)-1])
+			} else {
+				// Handle allowed types
+				switch kind {
+				case reflect.String:
+					node.ID = v.Interface().(string)
+				case reflect.Int:
+					node.ID = strconv.FormatInt(int64(v.Interface().(int)), 10)
+				case reflect.Int8:
+					node.ID = strconv.FormatInt(int64(v.Interface().(int8)), 10)
+				case reflect.Int16:
+					node.ID = strconv.FormatInt(int64(v.Interface().(int16)), 10)
+				case reflect.Int32:
+					node.ID = strconv.FormatInt(int64(v.Interface().(int32)), 10)
+				case reflect.Int64:
+					node.ID = strconv.FormatInt(v.Interface().(int64), 10)
+				case reflect.Uint:
+					node.ID = strconv.FormatUint(uint64(v.Interface().(uint)), 10)
+				case reflect.Uint8:
+					node.ID = strconv.FormatUint(uint64(v.Interface().(uint8)), 10)
+				case reflect.Uint16:
+					node.ID = strconv.FormatUint(uint64(v.Interface().(uint16)), 10)
+				case reflect.Uint32:
+					node.ID = strconv.FormatUint(uint64(v.Interface().(uint32)), 10)
+				case reflect.Uint64:
+					node.ID = strconv.FormatUint(v.Interface().(uint64), 10)
+				default:
+					// We had a JSON float (numeric), but our field was not one of the
+					// allowed numeric types
+					er = ErrBadJSONAPIID
+					break
+				}
 			}
 
 			node.Type = args[1]
