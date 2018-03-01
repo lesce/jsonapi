@@ -25,6 +25,11 @@ func (id *AuthorID) UnmarshalJSON(arr []byte) error {
 	return nil
 }
 
+type SomethingWithJsonUnmarshallerAttr struct {
+	ID   string       `jsonapi:"primary,somethings"`
+	AuthorID AuthorID `jsonapi:"attr,authorId"`
+}
+
 type BadModel struct {
 	ID int `jsonapi:"primary"`
 }

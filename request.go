@@ -457,6 +457,20 @@ func unmarshalValue(fieldValue, v reflect.Value, fieldType reflect.Type, iso8601
 		return unmarshalPtr(v, fieldValue)
 	}
 
+	// Check if the ID Type implements json.Unmarshaler
+	obj := reflect.New(fieldValue.Type())
+	if unmarshaler, ok := obj.Interface().(json.Unmarshaler); ok {
+		str := v.Interface().(string)
+
+		unmarshalError := unmarshaler.UnmarshalJSON([]byte(str))
+		if unmarshalError != nil {
+			return ErrInvalidType
+		}
+
+		assign(fieldValue, obj.Elem())
+		return nil
+	}
+
 	// As a final catch-all, ensure types line up to avoid a runtime panic.
 	if fieldValue.Kind() != v.Kind() {
 		return ErrInvalidType
