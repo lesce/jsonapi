@@ -12,6 +12,30 @@ import (
 	"time"
 )
 
+func TestUnmarshal_idUnmarshalerInterface(t *testing.T) {
+	id := "111111"
+	out := &Author{}
+	data := map[string]interface{}{
+		"data": map[string]interface{}{
+			"type":       "authors",
+			"id":         id,
+			"attributes": map[string]interface{}{"name": "some name"},
+		},
+	}
+	b, err := json.Marshal(data)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if err := UnmarshalPayload(bytes.NewReader(b), out); err != nil {
+		t.Fatal(err)
+	}
+
+	if id != out.ID.Value  {
+		t.Fatalf("Was expecting %d, got %d", id, out.ID.Value)
+	}
+}
+
 func TestUnmarshall_attrStringSlice(t *testing.T) {
 	out := &Book{}
 	tags := []string{"fiction", "sale"}
