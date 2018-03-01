@@ -5,6 +5,26 @@ import (
 	"time"
 )
 
+
+type AuthorID struct {
+	Value string
+}
+
+type Author struct {
+	ID AuthorID `jsonapi:"primary,authors"`
+	Name string `jsonapi:"attr,name"`
+}
+
+func (id *AuthorID) UnmarshalJSON(arr []byte) error {
+	// Copy byte array to ensure that we keep the value
+	str := make([]byte, len(arr), len(arr))
+	copy(str, arr)
+
+	id.Value = string(str[:])
+
+	return nil
+}
+
 type BadModel struct {
 	ID int `jsonapi:"primary"`
 }

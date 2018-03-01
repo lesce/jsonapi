@@ -185,6 +185,19 @@ func unmarshalNode(data *Node, model reflect.Value, included *map[string]*Node) 
 				continue
 			}
 
+			// Check if the ID Type implements json.Unmarshaler
+			obj := reflect.New(fieldValue.Type())
+			if unmarshaler, ok := obj.Interface().(json.Unmarshaler); ok {
+				unmarshalError := unmarshaler.UnmarshalJSON([]byte(data.ID))
+				if unmarshalError != nil {
+					er = ErrBadJSONAPIID
+					break
+				}
+
+				assign(fieldValue, obj.Elem())
+				continue
+			}
+
 			// Value was not a string... only other supported type was a numeric,
 			// which would have been sent as a float value.
 			floatValue, err := strconv.ParseFloat(data.ID, 64)
