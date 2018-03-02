@@ -377,12 +377,13 @@ func unmarshalValue(fieldValue, v reflect.Value, fieldType reflect.Type, iso8601
 		values := reflect.MakeSlice(reflect.SliceOf(t.Elem()), v.Len(), v.Len())
 
 		for i := 0; i < v.Len(); i++ {
+			val := v.Index(i).Interface()
 			switch fieldValue.Type().Elem() {
 
 			case reflect.TypeOf(time.Time{}):
 				t := time.Time{}
 				value := reflect.ValueOf(&t)
-				e := unmarshalTime(reflect.ValueOf(v.Index(i).Interface().(string)), value.Elem(), iso8601)
+				e := unmarshalTime(reflect.ValueOf(val.(string)), value.Elem(), iso8601)
 				if e != nil {
 					return e
 				}
@@ -392,7 +393,7 @@ func unmarshalValue(fieldValue, v reflect.Value, fieldType reflect.Type, iso8601
 			case reflect.TypeOf(new(time.Time)):
 				t := new(time.Time)
 				value := reflect.ValueOf(&t)
-				e := unmarshalTimePtr(reflect.ValueOf(v.Index(i).Interface().(string)), value.Elem(), iso8601)
+				e := unmarshalTimePtr(reflect.ValueOf(val.(string)), value.Elem(), iso8601)
 				if e != nil {
 					return e
 				}
@@ -401,33 +402,31 @@ func unmarshalValue(fieldValue, v reflect.Value, fieldType reflect.Type, iso8601
 				continue
 			}
 
+			// Check if the ID Type implements json.Unmarshaler
+			obj := reflect.New(fieldValue.Type().Elem())
+
+			if unmarshaler, ok := obj.Interface().(json.Unmarshaler); ok {
+				str := val.(string)
+				unmarshalError := unmarshaler.UnmarshalJSON([]byte(str))
+				if unmarshalError != nil {
+					return ErrInvalidType
+				}
+
+				values.Index(i).Set(obj.Elem())
+				continue
+			}
+
 			switch sliceType.Kind() {
 			case reflect.String:
-				values.Index(i).Set(reflect.ValueOf(v.Index(i).Interface()))
+				values.Index(i).Set(reflect.ValueOf(val))
 				continue
-			case reflect.Int:
-				var num = 0
-				value := reflect.ValueOf(&num)
-				unmarshalNumber(reflect.ValueOf(v.Index(i).Interface()), value.Elem(), t.Elem())
-				values.Index(i).Set(reflect.ValueOf(num))
-				continue
-			case reflect.Uint:
-				var num uint = 0
-				value := reflect.ValueOf(&num)
-				unmarshalNumber(reflect.ValueOf(v.Index(i).Interface()), value.Elem(), t.Elem())
-				values.Index(i).Set(reflect.ValueOf(num))
-				continue
-			case reflect.Float32:
-				var num float32 = 0
-				value := reflect.ValueOf(&num)
-				unmarshalNumber(reflect.ValueOf(v.Index(i).Interface()), value.Elem(), t.Elem())
-				values.Index(i).Set(reflect.ValueOf(num))
-				continue
-			case reflect.Float64:
-				var num float64 = 0
-				value := reflect.ValueOf(&num)
-				unmarshalNumber(reflect.ValueOf(v.Index(i).Interface()), value.Elem(), t.Elem())
-				values.Index(i).Set(reflect.ValueOf(num))
+			case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64, reflect.Uint, reflect.Uint8,
+				reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Float32, reflect.Float64:
+				e := unmarshalNumber(reflect.ValueOf(val), values.Index(i), fieldValue.Type().Elem())
+				if e != nil {
+					return e
+				}
+
 				continue
 			}
 		}
