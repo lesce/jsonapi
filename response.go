@@ -259,7 +259,7 @@ func visitModelNode(model interface{}, included *map[string]*Node,
 				if marshalError != nil {
 					er = ErrBadJSONAPIID
 				}
-				node.ID = string(marshalResult[1 : len(marshalResult)-1])
+				node.ID = string(marshalResult[:])
 			} else {
 				// Handle allowed types
 				switch kind {
