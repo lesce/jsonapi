@@ -5,14 +5,13 @@ import (
 	"time"
 )
 
-
 type AuthorID struct {
 	Value string
 }
 
 type Author struct {
-	ID AuthorID `jsonapi:"primary,authors"`
-	Name string `jsonapi:"attr,name"`
+	ID   AuthorID `jsonapi:"primary,authors"`
+	Name string   `jsonapi:"attr,name"`
 }
 
 func (id *AuthorID) UnmarshalJSON(arr []byte) error {
@@ -26,8 +25,9 @@ func (id *AuthorID) UnmarshalJSON(arr []byte) error {
 }
 
 type SomethingWithJsonUnmarshallerAttr struct {
-	ID   string       `jsonapi:"primary,somethings"`
-	AuthorID AuthorID `jsonapi:"attr,authorId"`
+	ID           string     `jsonapi:"primary,somethings"`
+	AuthorID     AuthorID   `jsonapi:"attr,authorId"`
+	OtherAuthors []AuthorID `jsonapi:"attr,otherAuthors"`
 }
 
 type BadModel struct {
@@ -57,17 +57,17 @@ type Timestamp struct {
 }
 
 type Timestamps struct {
-	ID   int        `jsonapi:"primary,timestamp-arrays"`
+	ID   int          `jsonapi:"primary,timestamp-arrays"`
 	Time []time.Time  `jsonapi:"attr,timestamps,iso8601"`
 	Next []*time.Time `jsonapi:"attr,next,iso8601"`
 }
 
 type NumberArrays struct {
-	ID   int        	`jsonapi:"primary,number-arrays"`
-	Ints []int  		`jsonapi:"attr,ints"`
-	UInts []uint 		`jsonapi:"attr,uints"`
-	Floats []float32 	`jsonapi:"attr,floats"`
-	Doubles []float64 	`jsonapi:"attr,doubles"`
+	ID      int       `jsonapi:"primary,number-arrays"`
+	Ints    []int     `jsonapi:"attr,ints"`
+	UInts   []uint    `jsonapi:"attr,uints"`
+	Floats  []float32 `jsonapi:"attr,floats"`
+	Doubles []float64 `jsonapi:"attr,doubles"`
 }
 
 type Car struct {
