@@ -403,7 +403,14 @@ func unmarshalValue(fieldValue, v reflect.Value, fieldType reflect.Type, iso8601
 			}
 
 			// Check if the ID Type implements json.Unmarshaler
-			obj := reflect.New(fieldValue.Type().Elem())
+			unmarshalable := fieldValue.Type().Elem()
+
+			var obj reflect.Value
+			if unmarshalable.Kind() == reflect.Ptr {
+				obj = reflect.New(unmarshalable.Elem())
+			} else {
+				obj = reflect.New(unmarshalable)
+			}
 
 			if unmarshaler, ok := obj.Interface().(json.Unmarshaler); ok {
 				str := val.(string)
@@ -412,7 +419,12 @@ func unmarshalValue(fieldValue, v reflect.Value, fieldType reflect.Type, iso8601
 					return ErrInvalidType
 				}
 
-				values.Index(i).Set(obj.Elem())
+				if unmarshalable.Kind() == reflect.Ptr {
+					values.Index(i).Set(obj.Elem().Addr())
+				} else {
+					values.Index(i).Set(obj.Elem())
+				}
+
 				continue
 			}
 
