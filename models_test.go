@@ -25,9 +25,10 @@ func (id *AuthorID) UnmarshalJSON(arr []byte) error {
 }
 
 type SomethingWithJsonUnmarshallerAttr struct {
-	ID           string     `jsonapi:"primary,somethings"`
-	AuthorID     AuthorID   `jsonapi:"attr,authorId"`
-	OtherAuthors []AuthorID `jsonapi:"attr,otherAuthors"`
+	ID              string      `jsonapi:"primary,somethings"`
+	AuthorID        AuthorID    `jsonapi:"attr,authorId"`
+	OtherAuthors    []AuthorID  `jsonapi:"attr,otherAuthors"`
+	OtherAuthorsPtr []*AuthorID `jsonapi:"attr,otherPtrAuthors"`
 }
 
 type BadModel struct {

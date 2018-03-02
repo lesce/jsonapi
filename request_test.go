@@ -382,6 +382,41 @@ func TestUnmarshalParsesUnmarshallerArray(t *testing.T) {
 	}
 }
 
+func TestUnmarshalParsesUnmarshallerPtrArray(t *testing.T) {
+	id := "111111"
+	out := &SomethingWithJsonUnmarshallerAttr{}
+	authors := []string{
+		"4",
+		"5",
+	}
+
+	data := map[string]interface{}{
+		"data": map[string]interface{}{
+			"type": "somethings",
+			"id":   id,
+			"attributes": map[string]interface{}{
+				"otherPtrAuthors": authors,
+			},
+		},
+	}
+	b, err := json.Marshal(data)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if err := UnmarshalPayload(bytes.NewReader(b), out); err != nil {
+		t.Fatal(err)
+	}
+
+	if authors[0] != out.OtherAuthorsPtr[0].Value {
+		t.Fatalf("Was expecting %d, got %d", authors[0], out.OtherAuthors[0].Value)
+	}
+
+	if authors[1] != out.OtherAuthorsPtr[1].Value {
+		t.Fatalf("Was expecting %d, got %d", authors[1], out.OtherAuthors[1].Value)
+	}
+}
+
 func TestUnmarshalParsesUIntArray(t *testing.T) {
 	uints := []uint{
 		1,
