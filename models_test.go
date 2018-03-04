@@ -1,6 +1,7 @@
 package jsonapi
 
 import (
+	"encoding/json"
 	"fmt"
 	"time"
 )
@@ -22,6 +23,16 @@ func (id *AuthorID) UnmarshalJSON(arr []byte) error {
 	id.Value = string(str[:])
 
 	return nil
+}
+
+func (id *AuthorID) MarshalJSON() ([]byte, error) {
+	var val = id.Value
+	return json.Marshal(&val)
+}
+
+type SomethingWithJsonUnmarshallerPtrAttr struct {
+	ID              string      `jsonapi:"primary,somethings"`
+	OtherAuthorsPtr []*AuthorID `jsonapi:"attr,otherPtrAuthors"`
 }
 
 type SomethingWithJsonUnmarshallerAttr struct {
@@ -76,6 +87,13 @@ type Car struct {
 	Make  *string `jsonapi:"attr,make,omitempty"`
 	Model *string `jsonapi:"attr,model,omitempty"`
 	Year  *uint   `jsonapi:"attr,year,omitempty"`
+}
+
+type CarAuthorID struct {
+	ID    *AuthorID `jsonapi:"primary,cars"`
+	Make  *string   `jsonapi:"attr,make,omitempty"`
+	Model *string   `jsonapi:"attr,model,omitempty"`
+	Year  *uint     `jsonapi:"attr,year,omitempty"`
 }
 
 type Post struct {
