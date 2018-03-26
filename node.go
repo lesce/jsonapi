@@ -51,6 +51,12 @@ type RelationshipOneNode struct {
 	Meta  *Meta  `json:"meta,omitempty"`
 }
 
+// RelationshipOneNodeWithoutData is used to represent a generic has one JSON API relation without the data attribute
+type RelationshipNodeWithoutData struct {
+	Links *Links `json:"links,omitempty"`
+	Meta  *Meta  `json:"meta,omitempty"`
+}
+
 // RelationshipManyNode is used to represent a generic has many JSON API
 // relation
 type RelationshipManyNode struct {

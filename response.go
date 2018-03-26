@@ -354,10 +354,12 @@ func visitModelNode(model interface{}, included *map[string]*Node,
 			}
 		} else if annotation == annotationRelation {
 			var omitEmpty bool
+			var omitData bool
 
 			//add support for 'omitempty' struct tag for marshaling as absent
 			if len(args) > 2 {
 				omitEmpty = args[2] == annotationOmitEmpty
+				omitData = args[2] == annotationOmitData
 			}
 
 			isSlice := fieldValue.Type().Kind() == reflect.Slice
@@ -396,16 +398,23 @@ func visitModelNode(model interface{}, included *map[string]*Node,
 				relationship.Meta = relMeta
 
 				if sideload {
-					shallowNodes := []*Node{}
-					for _, n := range relationship.Data {
-						appendIncluded(included, n)
-						shallowNodes = append(shallowNodes, toShallowNode(n))
-					}
+					if omitData {
+						node.Relationships[args[1]] = &RelationshipNodeWithoutData{
+							Links: relationship.Links,
+							Meta:  relationship.Meta,
+						}
+					} else {
+						shallowNodes := []*Node{}
+						for _, n := range relationship.Data {
+							appendIncluded(included, n)
+							shallowNodes = append(shallowNodes, toShallowNode(n))
+						}
 
-					node.Relationships[args[1]] = &RelationshipManyNode{
-						Data:  shallowNodes,
-						Links: relationship.Links,
-						Meta:  relationship.Meta,
+						node.Relationships[args[1]] = &RelationshipManyNode{
+							Data:  shallowNodes,
+							Links: relationship.Links,
+							Meta:  relationship.Meta,
+						}
 					}
 				} else {
 					node.Relationships[args[1]] = relationship
@@ -415,7 +424,11 @@ func visitModelNode(model interface{}, included *map[string]*Node,
 
 				// Handle null relationship case
 				if fieldValue.IsNil() {
-					node.Relationships[args[1]] = &RelationshipOneNode{Data: nil}
+					if omitData {
+						node.Relationships[args[1]] = &RelationshipNodeWithoutData{}
+					} else {
+						node.Relationships[args[1]] = &RelationshipOneNode{Data: nil}
+					}
 					continue
 				}
 
@@ -431,16 +444,30 @@ func visitModelNode(model interface{}, included *map[string]*Node,
 
 				if sideload {
 					appendIncluded(included, relationship)
-					node.Relationships[args[1]] = &RelationshipOneNode{
-						Data:  toShallowNode(relationship),
-						Links: relLinks,
-						Meta:  relMeta,
+					if omitData {
+						node.Relationships[args[1]] = &RelationshipNodeWithoutData{
+							Links: relLinks,
+							Meta:  relMeta,
+						}
+					} else {
+						node.Relationships[args[1]] = &RelationshipOneNode{
+							Data:  toShallowNode(relationship),
+							Links: relLinks,
+							Meta:  relMeta,
+						}
 					}
 				} else {
-					node.Relationships[args[1]] = &RelationshipOneNode{
-						Data:  relationship,
-						Links: relLinks,
-						Meta:  relMeta,
+					if omitData {
+						node.Relationships[args[1]] = &RelationshipNodeWithoutData{
+							Links: relLinks,
+							Meta:  relMeta,
+						}
+					} else {
+						node.Relationships[args[1]] = &RelationshipOneNode{
+							Data:  relationship,
+							Links: relLinks,
+							Meta:  relMeta,
+						}
 					}
 				}
 			}

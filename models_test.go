@@ -77,6 +77,23 @@ type Blog struct {
 	CreatedAt     time.Time `jsonapi:"attr,created_at"`
 	ViewCount     int       `jsonapi:"attr,view_count"`
 }
+type BlogOmitData struct {
+	ID          int    `jsonapi:"primary,blogs"`
+	Title       string `jsonapi:"attr,title"`
+	CurrentPost *Post  `jsonapi:"relation,current_post,omitdata"`
+}
+
+func (b *BlogOmitData) JSONAPIRelationshipLinks(relation string) *Links {
+	if relation == "current_post" {
+		return &Links{
+			"self": fmt.Sprintf("https://example.com/api/posts/%s", "3"),
+			"related": Link{
+				Href: fmt.Sprintf("https://example.com/api/blogs/%d/current_post", b.ID),
+			},
+		}
+	}
+	return nil
+}
 
 func (b *Blog) JSONAPILinks() *Links {
 	return &Links{

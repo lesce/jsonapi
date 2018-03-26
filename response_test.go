@@ -126,6 +126,42 @@ func TestWithoutOmitsEmptyAnnotationOnRelation(t *testing.T) {
 	}
 }
 
+func TestWithOmitDataAnnotationOnRelation(t *testing.T) {
+	blog := &BlogOmitData{
+		ID: 999,
+		CurrentPost: &Post{
+			ID: 123,
+		},
+	}
+
+	out := bytes.NewBuffer(nil)
+	if err := MarshalPayload(out, blog); err != nil {
+		t.Fatal(err)
+	}
+
+	var jsonData map[string]interface{}
+	if err := json.Unmarshal(out.Bytes(), &jsonData); err != nil {
+		t.Fatal(err)
+	}
+	payload := jsonData["data"].(map[string]interface{})
+
+	// Verify relationship was set
+	relationships := payload["relationships"].(map[string]interface{})
+	// Verify the relationship was not omitted, and is not null
+	if val, exists := relationships["current_post"]; !exists {
+		t.Fatal("Was expecting the relationships.current_post key/value to have NOT been omitted")
+	} else if val.(map[string]interface{})["data"] != nil {
+		t.Fatal("Was expecting the data.relationships.current_post value to have been nil/null")
+	}
+	currentPost := relationships["current_post"].(map[string]interface{})
+	// Verify that data is omited
+	for k := range currentPost {
+		if k == "data" {
+			t.Fatal("Was expecting the data.relationships.current_post value to have been omited")
+		}
+	}
+}
+
 func TestWithOmitsEmptyAnnotationOnRelation(t *testing.T) {
 	type BlogOptionalPosts struct {
 		ID          int     `jsonapi:"primary,blogs"`
