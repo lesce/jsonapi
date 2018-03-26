@@ -421,6 +421,9 @@ func visitModelNode(model interface{}, included *map[string]*Node,
 						}
 					}
 				} else {
+					if omitData {
+						relationship.Data = nil
+					}
 					node.Relationships[args[1]] = relationship
 				}
 			} else {
