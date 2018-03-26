@@ -1,1 +1,6 @@
 /examples/examples
+/bin/
+/pkg/
+/src/
+/.idea
+/.vscode/
