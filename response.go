@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"reflect"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -207,9 +208,13 @@ func visitModelNode(model interface{}, included *map[string]*Node,
 	node := new(Node)
 
 	var er error
+	value := reflect.ValueOf(model)
+	if value.IsNil() {
+		return nil, nil
+	}
 
-	modelValue := reflect.ValueOf(model).Elem()
-	modelType := reflect.ValueOf(model).Type().Elem()
+	modelValue := value.Elem()
+	modelType := value.Type().Elem()
 
 	for i := 0; i < modelValue.NumField(); i++ {
 		structField := modelValue.Type().Field(i)
@@ -273,10 +278,34 @@ func visitModelNode(model interface{}, included *map[string]*Node,
 			case reflect.Uint64:
 				node.ID = strconv.FormatUint(v.Interface().(uint64), 10)
 			default:
-				// We had a JSON float (numeric), but our field was not one of the
-				// allowed numeric types
-				er = ErrBadJSONAPIID
-				break
+				// Check if ID type implements json.Marshaler
+				marshaler, isMarshaler := v.Interface().(json.Marshaler)
+
+				if !isMarshaler {
+					// Check if ID type is a pointer type that implements json.Marshaler
+					marshaler, isMarshaler = fieldValue.Interface().(json.Marshaler)
+				}
+
+				if isMarshaler {
+					marshalResult, marshalError := marshaler.MarshalJSON()
+					if marshalError != nil {
+						er = ErrBadJSONAPIID
+					}
+
+					id := string(marshalResult[:])
+					// Prevent quoting of id
+					if len(id) >= 2 {
+						if id[0] == '"' && id[len(id)-1] == '"' {
+							id = id[1 : len(id)-1]
+						}
+					}
+
+					node.ID = id
+				} else {
+					// Our field was not one of the ID allowed types
+					er = ErrBadJSONAPIID
+					break
+				}
 			}
 
 			node.Type = args[1]
@@ -341,7 +370,7 @@ func visitModelNode(model interface{}, included *map[string]*Node,
 				emptyValue := reflect.Zero(fieldValue.Type())
 
 				// See if we need to omit this field
-				if omitEmpty && fieldValue.Interface() == emptyValue.Interface() {
+				if omitEmpty && reflect.DeepEqual(fieldValue.Interface(), emptyValue.Interface()) {
 					continue
 				}
 
@@ -417,6 +446,9 @@ func visitModelNode(model interface{}, included *map[string]*Node,
 						}
 					}
 				} else {
+					if omitData {
+						relationship.Data = nil
+					}
 					node.Relationships[args[1]] = relationship
 				}
 			} else {
@@ -540,9 +572,16 @@ func nodeMapValues(m *map[string]*Node) []*Node {
 	mp := *m
 	nodes := make([]*Node, len(mp))
 
+	keys := []string{}
+	for key, _ := range mp {
+		keys = append(keys, key)
+	}
+
+	sort.Strings(keys)
+
 	i := 0
-	for _, n := range mp {
-		nodes[i] = n
+	for _, key := range keys {
+		nodes[i] = mp[key]
 		i++
 	}
 

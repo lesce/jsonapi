@@ -12,6 +12,80 @@ import (
 	"time"
 )
 
+func TestUnmarshal_idUnmarshalerInterface(t *testing.T) {
+	id := "111111"
+	out := &Author{}
+	data := map[string]interface{}{
+		"data": map[string]interface{}{
+			"type":       "authors",
+			"id":         id,
+			"attributes": map[string]interface{}{"name": "some name"},
+		},
+	}
+	b, err := json.Marshal(data)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if err := UnmarshalPayload(bytes.NewReader(b), out); err != nil {
+		t.Fatal(err)
+	}
+
+	if id != out.ID.Value {
+		t.Fatalf("Was expecting %d, got %d", id, out.ID.Value)
+	}
+}
+
+func TestUnmarshal_idUnmarshalerPtrInterface(t *testing.T) {
+	id := "111111"
+	out := &AuthorPtr{}
+	data := map[string]interface{}{
+		"data": map[string]interface{}{
+			"type":       "authors-ptr",
+			"id":         id,
+			"attributes": map[string]interface{}{"name": "some name"},
+		},
+	}
+	b, err := json.Marshal(data)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if err := UnmarshalPayload(bytes.NewReader(b), out); err != nil {
+		t.Fatal(err)
+	}
+
+	if id != out.ID.Value {
+		t.Fatalf("Was expecting %d, got %d", id, out.ID.Value)
+	}
+}
+
+func TestUnmarshal_attrUnmarshalerInterface(t *testing.T) {
+	id := "111111"
+	out := &SomethingWithJsonUnmarshallerAttr{}
+	data := map[string]interface{}{
+		"data": map[string]interface{}{
+			"type": "somethings",
+			"id":   "ddasd",
+			"attributes": map[string]interface{}{
+				"authorId": id,
+			},
+		},
+	}
+	b, err := json.Marshal(data)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if err := UnmarshalPayload(bytes.NewReader(b), out); err != nil {
+		t.Fatal(err)
+	}
+
+	if id != out.AuthorID.Value {
+		t.Fatalf("Was expecting %d, got %d", id, out.AuthorID.Value)
+	}
+}
+
 func TestUnmarshall_attrStringSlice(t *testing.T) {
 	out := &Book{}
 	tags := []string{"fiction", "sale"}
@@ -261,6 +335,242 @@ func TestUnmarshalSetsAttrs(t *testing.T) {
 
 	if out.ViewCount != 1000 {
 		t.Fatalf("View count not properly serialized")
+	}
+}
+
+func TestUnmarshalParsesIntArray(t *testing.T) {
+	ints := []int{
+		1,
+		2,
+	}
+
+	payload := &OnePayload{
+		Data: &Node{
+			Type: "number-arrays",
+			Attributes: map[string]interface{}{
+				"ints": ints,
+			},
+		},
+	}
+
+	in := bytes.NewBuffer(nil)
+	json.NewEncoder(in).Encode(payload)
+
+	out := new(NumberArrays)
+
+	if err := UnmarshalPayload(in, out); err != nil {
+		t.Fatal(err)
+	}
+
+	if out.Ints[0] != 1 {
+		t.Fatal("Parsing the first integer failed")
+	}
+
+	if out.Ints[1] != 2 {
+		t.Fatal("Parsing the second integer failed")
+	}
+}
+
+func TestUnmarshalParsesUnmarshallerArray(t *testing.T) {
+	id := "111111"
+	out := &SomethingWithJsonUnmarshallerAttr{}
+	authors := []string{
+		"4",
+		"5",
+	}
+
+	data := map[string]interface{}{
+		"data": map[string]interface{}{
+			"type": "somethings",
+			"id":   id,
+			"attributes": map[string]interface{}{
+				"otherAuthors": authors,
+			},
+		},
+	}
+	b, err := json.Marshal(data)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if err := UnmarshalPayload(bytes.NewReader(b), out); err != nil {
+		t.Fatal(err)
+	}
+
+	if authors[0] != out.OtherAuthors[0].Value {
+		t.Fatalf("Was expecting %d, got %d", authors[0], out.OtherAuthors[0].Value)
+	}
+
+	if authors[1] != out.OtherAuthors[1].Value {
+		t.Fatalf("Was expecting %d, got %d", authors[1], out.OtherAuthors[1].Value)
+	}
+}
+
+func TestUnmarshalParsesUnmarshallerPtrArray(t *testing.T) {
+	id := "111111"
+	out := &SomethingWithJsonUnmarshallerAttr{}
+	authors := []string{
+		"4",
+		"5",
+	}
+
+	data := map[string]interface{}{
+		"data": map[string]interface{}{
+			"type": "somethings",
+			"id":   id,
+			"attributes": map[string]interface{}{
+				"otherPtrAuthors": authors,
+			},
+		},
+	}
+	b, err := json.Marshal(data)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if err := UnmarshalPayload(bytes.NewReader(b), out); err != nil {
+		t.Fatal(err)
+	}
+
+	if authors[0] != out.OtherAuthorsPtr[0].Value {
+		t.Fatalf("Was expecting %d, got %d", authors[0], out.OtherAuthors[0].Value)
+	}
+
+	if authors[1] != out.OtherAuthorsPtr[1].Value {
+		t.Fatalf("Was expecting %d, got %d", authors[1], out.OtherAuthors[1].Value)
+	}
+}
+
+func TestUnmarshalParsesUIntArray(t *testing.T) {
+	uints := []uint{
+		1,
+		2,
+	}
+
+	payload := &OnePayload{
+		Data: &Node{
+			Type: "number-arrays",
+			Attributes: map[string]interface{}{
+				"uints": uints,
+			},
+		},
+	}
+
+	in := bytes.NewBuffer(nil)
+	json.NewEncoder(in).Encode(payload)
+
+	out := new(NumberArrays)
+
+	if err := UnmarshalPayload(in, out); err != nil {
+		t.Fatal(err)
+	}
+
+	if out.UInts[0] != 1 {
+		t.Fatal("Parsing the first integer failed")
+	}
+
+	if out.UInts[1] != 2 {
+		t.Fatal("Parsing the second integer failed")
+	}
+}
+
+func TestUnmarshalParsesFloatArray(t *testing.T) {
+	floats := []float32{
+		1.5,
+		2.4,
+	}
+
+	payload := &OnePayload{
+		Data: &Node{
+			Type: "number-arrays",
+			Attributes: map[string]interface{}{
+				"floats": floats,
+			},
+		},
+	}
+
+	in := bytes.NewBuffer(nil)
+	json.NewEncoder(in).Encode(payload)
+
+	out := new(NumberArrays)
+
+	if err := UnmarshalPayload(in, out); err != nil {
+		t.Fatal(err)
+	}
+
+	if out.Floats[0] != 1.5 {
+		t.Fatal("Parsing the first float failed")
+	}
+
+	if out.Floats[1] != 2.4 {
+		t.Fatal("Parsing the second float failed")
+	}
+}
+
+func TestUnmarshalParsesISO8601Array(t *testing.T) {
+	timestamps := []string{
+		"2016-08-17T08:27:12Z",
+		"2016-08-18T08:27:12Z",
+	}
+
+	payload := &OnePayload{
+		Data: &Node{
+			Type: "timestamp-arrays",
+			Attributes: map[string]interface{}{
+				"timestamps": timestamps,
+			},
+		},
+	}
+
+	in := bytes.NewBuffer(nil)
+	json.NewEncoder(in).Encode(payload)
+
+	out := new(Timestamps)
+
+	if err := UnmarshalPayload(in, out); err != nil {
+		t.Fatal(err)
+	}
+
+	first := time.Date(2016, 8, 17, 8, 27, 12, 0, time.UTC)
+	second := time.Date(2016, 8, 18, 8, 27, 12, 0, time.UTC)
+
+	if !out.Time[0].Equal(first) {
+		t.Fatal("Parsing the first ISO8601 timestamp failed")
+	}
+
+	if !out.Time[1].Equal(second) {
+		t.Fatal("Parsing the second ISO8601 timestamp failed")
+	}
+}
+
+func TestUnmarshalParsesISO8601TimePointerArray(t *testing.T) {
+	timestamps := []string{
+		"2016-08-17T08:27:12Z",
+		"2016-08-18T08:27:12Z",
+	}
+
+	payload := &OnePayload{
+		Data: &Node{
+			Type: "timestamps-arrays",
+			Attributes: map[string]interface{}{
+				"next": timestamps,
+			},
+		},
+	}
+
+	in := bytes.NewBuffer(nil)
+	json.NewEncoder(in).Encode(payload)
+
+	out := new(Timestamps)
+
+	if err := UnmarshalPayload(in, out); err != nil {
+		t.Fatal(err)
+	}
+
+	expected := time.Date(2016, 8, 17, 8, 27, 12, 0, time.UTC)
+
+	if !out.Next[0].Equal(expected) {
+		t.Fatal("Parsing the ISO8601 timestamp failed")
 	}
 }
 

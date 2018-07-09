@@ -37,6 +37,36 @@ func TestMarshalPayload(t *testing.T) {
 	}
 }
 
+func TestMarshalPayloadWithNulls(t *testing.T) {
+
+	books := []*Book{nil, {ID:101}, nil}
+	var jsonData map[string]interface{}
+
+
+	out := bytes.NewBuffer(nil)
+	if err := MarshalPayload(out, books); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := json.Unmarshal(out.Bytes(), &jsonData); err != nil {
+		t.Fatal(err)
+	}
+	raw, ok := jsonData["data"]
+	if !ok {
+		t.Fatalf("data key does not exist")
+	}
+	arr, ok := raw.([]interface{})
+	if !ok {
+		t.Fatalf("data is not an Array")
+	}
+	for i := 0; i < len(arr); i++ {
+		if books[i] == nil && arr[i] != nil ||
+			books[i] != nil && arr[i] == nil {
+			t.Fatalf("restored data is not equal to source")
+		}
+	}
+}
+
 func TestMarshal_attrStringSlice(t *testing.T) {
 	tags := []string{"fiction", "sale"}
 	b := &Book{ID: 1, Tags: tags}
@@ -230,6 +260,61 @@ func TestWithOmitsEmptyAnnotationOnRelation_MixedData(t *testing.T) {
 	}
 }
 
+func TestWithOmitsEmptyAnnotationOnAttribute(t *testing.T) {
+	type Phone struct {
+		Number string `json:"number"`
+	}
+
+	type Address struct {
+		City   string `json:"city"`
+		Street string `json:"street"`
+	}
+
+	type Tags map[string]int
+
+	type Author struct {
+		ID      int      `jsonapi:"primary,authors"`
+		Name    string   `jsonapi:"attr,title"`
+		Phones  []*Phone `jsonapi:"attr,phones,omitempty"`
+		Address *Address `jsonapi:"attr,address,omitempty"`
+		Tags    Tags     `jsonapi:"attr,tags,omitempty"`
+	}
+
+	author := &Author{
+		ID:      999,
+		Name:    "Igor",
+		Phones:  nil,                        // should be omitted
+		Address: nil,                        // should be omitted
+		Tags:    Tags{"dogs": 1, "cats": 2}, // should not be omitted
+	}
+
+	out := bytes.NewBuffer(nil)
+	if err := MarshalPayload(out, author); err != nil {
+		t.Fatal(err)
+	}
+
+	var jsonData map[string]interface{}
+	if err := json.Unmarshal(out.Bytes(), &jsonData); err != nil {
+		t.Fatal(err)
+	}
+
+	// Verify that there is no field "phones" in attributes
+	payload := jsonData["data"].(map[string]interface{})
+	attributes := payload["attributes"].(map[string]interface{})
+	if _, ok := attributes["title"]; !ok {
+		t.Fatal("Was expecting the data.attributes.title to have NOT been omitted")
+	}
+	if _, ok := attributes["phones"]; ok {
+		t.Fatal("Was expecting the data.attributes.phones to have been omitted")
+	}
+	if _, ok := attributes["address"]; ok {
+		t.Fatal("Was expecting the data.attributes.phones to have been omitted")
+	}
+	if _, ok := attributes["tags"]; !ok {
+		t.Fatal("Was expecting the data.attributes.tags to have NOT been omitted")
+	}
+}
+
 func TestMarshalIDPtr(t *testing.T) {
 	id, make, model := "123e4567-e89b-12d3-a456-426655440000", "Ford", "Mustang"
 	car := &Car{
@@ -251,12 +336,91 @@ func TestMarshalIDPtr(t *testing.T) {
 	// attributes := data["attributes"].(map[string]interface{})
 
 	// Verify that the ID was sent
-	val, exists := data["id"]
+	val, exists := data["id"].(string)
 	if !exists {
 		t.Fatal("Was expecting the data.id member to exist")
 	}
 	if val != id {
 		t.Fatalf("Was expecting the data.id member to be `%s`, got `%s`", id, val)
+	}
+}
+
+func TestMarshalIDMarshallerPtr(t *testing.T) {
+	id := AuthorID{
+		Value: "123e4567-e89b-12d3-a456-426655440000",
+	}
+	make, model := "Ford", "Mustang"
+	car := &CarAuthorID{
+		ID:    &id,
+		Make:  &make,
+		Model: &model,
+	}
+
+	out := bytes.NewBuffer(nil)
+	if err := MarshalPayload(out, car); err != nil {
+		t.Fatal(err)
+	}
+
+	var jsonData map[string]interface{}
+	if err := json.Unmarshal(out.Bytes(), &jsonData); err != nil {
+		t.Fatal(err)
+	}
+	data := jsonData["data"].(map[string]interface{})
+
+	// Verify that the ID was sent
+	val, exists := data["id"]
+	if !exists {
+		t.Fatal("Was expecting the data.id member to exist")
+	}
+
+	if val != id.Value {
+		t.Fatalf("Was expecting the data.id member to be `%s`, got `%s`", id, val)
+	}
+}
+
+func TestMarshallerPtrArray(t *testing.T) {
+	id1 := "111111"
+	id2 := "222222"
+
+	authors := []*AuthorID{
+		{
+			Value: id1,
+		},
+		{
+			Value: id2,
+		},
+	}
+
+	in := &SomethingWithJsonUnmarshallerPtrAttr{
+		ID:              "foo",
+		OtherAuthorsPtr: authors,
+	}
+
+	out := bytes.NewBuffer(nil)
+	if err := MarshalPayload(out, in); err != nil {
+		t.Fatal(err)
+	}
+
+	var jsonData map[string]interface{}
+	if err := json.Unmarshal(out.Bytes(), &jsonData); err != nil {
+		t.Fatal(err)
+	}
+
+	data := jsonData["data"].(map[string]interface{})
+	attributes := data["attributes"].(map[string]interface{})
+	// Verify that the ID was sent
+	val, exists := attributes["otherPtrAuthors"].([]interface{})
+
+	if !exists {
+		t.Fatal("Was expecting the data.attributes.otherPtrAuthors member to exist")
+	}
+
+	if val[0] != authors[0].Value {
+		t.Fatalf("Was expecting %d, got %d", authors[0].Value, val[0])
+	}
+
+	if val[1] != authors[1].Value {
+		t.Fatalf("Was expecting %d, got %d", authors[1].Value, val[1])
 	}
 }
 
